@@ -2,14 +2,6 @@
 ------------------------------------------
 获取 Cookie：打开龙湖天街小程序，进入 我的 - 签到赚珑珠 - 任务赚奖励 - 马上签到。
 
-图标：https://raw.githubusercontent.com/leiyiyan/resource/main/icons/lhtj.png
-
-[Script]
-http-request ^https?:\/\/gw2c\-hw\-open\.longfor\.com\/lmarketing\-task\-api\-mvc\-prod\/openapi\/task\/v1\/signature\/clock script-path=https://raw.githubusercontent.com/leiyiyan/resource/main/script/lhtj/lhtj.js, timeout=60, tag=龙湖天街获取Cookie
-
-[MITM]
-hostname = gw2c-hw-open.longfor.com
-
 ## 青龙面板使用说明
 ------------------------------------------
 1. 支持手动配置账号信息，优先级高于自动获取的Cookie
@@ -22,20 +14,24 @@ hostname = gw2c-hw-open.longfor.com
    - 多账号配置: 使用 & 符号连接多个token或cookie，如 `token1&token2&cookie3`
    - 也支持完整JSON格式: `{"token":"xxx","cookie":"xxx"}`
 
-4. 青龙面板配置步骤：
+4. 依赖说明：
+   - 脚本会自动检测并安装所需依赖（iconv-lite、got@11、tough-cookie）
+   - 如果自动安装失败，请在青龙面板的依赖管理中手动添加
+
+5. 青龙面板配置步骤：
    a. 进入青龙面板 -> 环境变量 -> 新建变量
    b. 名称填写：LHTJ_MANUAL_COOKIE
    c. 值填写：您的token或cookie（参考上面的示例）
    d. 备注填写：龙湖天街账号配置
    e. 保存后新建定时任务运行脚本
 
-5. 获取账号信息的方法：
+6. 获取账号信息的方法：
    a. 使用抓包工具（如Surge、Charles等）抓取龙湖天街小程序的请求
    b. 找到签到相关请求（如：/signature/clock）
    c. 从请求头中提取token值
    d. 配置到环境变量中即可
 
-6. 命令行参数（适用于青龙面板调试）：
+7. 命令行参数（适用于青龙面板调试）：
    a. node lhtj.js debug - 开启调试模式
    b. node lhtj.js info - 显示当前配置信息
    c. node lhtj.js convert '{"token":"xxx"}' - 将请求头转换为配置格式
@@ -51,6 +47,83 @@ hostname = gw2c-hw-open.longfor.com
 6、如果任何单位或个人认为此脚本可能涉嫌侵犯其权利，应及时通知并提供身份证明，所有权证明，我们将在收到认证文件确认后删除此脚本。
 7、所有直接或间接使用、查看此脚本的人均应该仔细阅读此声明。本人保留随时更改或补充此声明的权利。一旦您使用或复制了此脚本，即视为您已接受此免责声明。
 */
+
+// 自动检测和安装依赖
+const checkAndInstallDeps = async () => {
+    if (!isNode()) return;
+    
+    console.log('🔍 检查依赖...');
+    const requiredDeps = [
+        { name: 'iconv-lite', version: '' },
+        { name: 'got', version: '@11' },
+        { name: 'tough-cookie', version: '' }
+    ];
+    
+    let needInstall = false;
+    const missingDeps = [];
+    
+    for (const dep of requiredDeps) {
+        try {
+            require(dep.name);
+            console.log(`✅ 依赖 ${dep.name} 已安装`);
+        } catch (e) {
+            console.log(`❌ 依赖 ${dep.name} 未安装`);
+            missingDeps.push(dep);
+            needInstall = true;
+        }
+    }
+    
+    if (needInstall) {
+        console.log('📦 开始安装缺失的依赖...');
+        try {
+            const { execSync } = require('child_process');
+            const installCmd = missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ');
+            console.log(`执行: npm install ${installCmd} --save`);
+            execSync(`npm install ${installCmd} --save`, { stdio: 'inherit' });
+            console.log('✅ 依赖安装完成');
+            
+            // 验证安装结果
+            let allInstalled = true;
+            for (const dep of missingDeps) {
+                try {
+                    require(dep.name);
+                    console.log(`✅ 依赖 ${dep.name} 安装成功`);
+                } catch (e) {
+                    console.log(`❌ 依赖 ${dep.name} 安装失败，请手动安装`);
+                    allInstalled = false;
+                }
+            }
+            
+            if (!allInstalled) {
+                console.log('⚠️ 部分依赖安装失败，请手动安装缺失的依赖：');
+                console.log(`在青龙面板的依赖管理中添加：${missingDeps.map(dep => `${dep.name}${dep.version}`).join(', ')}`);
+                console.log('或通过SSH连接执行：');
+                console.log(`cd /ql/scripts && npm install ${installCmd} --save`);
+                process.exit(1);
+            }
+        } catch (e) {
+            console.log('❌ 依赖安装失败，请手动安装：');
+            console.log(`在青龙面板的依赖管理中添加：${missingDeps.map(dep => `${dep.name}${dep.version}`).join(', ')}`);
+            console.log('或通过SSH连接执行：');
+            console.log(`cd /ql/scripts && npm install ${missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ')} --save`);
+            console.log(`错误详情: ${e.message}`);
+            process.exit(1);
+        }
+    }
+};
+
+// 判断是否在Node环境
+function isNode() {
+    return typeof module !== 'undefined' && !!module.exports;
+}
+
+// 执行依赖检查和安装
+if (isNode()) {
+    (async () => {
+        await checkAndInstallDeps();
+    })();
+}
+
 const $ = new Env("龙湖天街");
 const ckName = "lhtj_data";
 
@@ -503,6 +576,18 @@ async function getCookie() {
 //主程序执行入口
 !(async () => {
     try {
+        // 如果在Node环境中，确保依赖已安装
+        if ($.isNode()) {
+            try {
+                // 尝试加载依赖，如果失败会在checkAndInstallDeps中处理
+                require('iconv-lite');
+                require('got');
+                require('tough-cookie');
+            } catch (e) {
+                // 依赖问题已在checkAndInstallDeps中处理，这里不需要额外处理
+            }
+        }
+        
         // 处理命令行参数（适用于青龙面板调试）
         if ($.isNode() && process.argv.length > 2) {
             const cmd = process.argv[2];
