@@ -78,8 +78,8 @@ const checkAndInstallDeps = async () => {
         try {
             const { execSync } = require('child_process');
             const installCmd = missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ');
-            console.log(`执行: npm install ${installCmd} --save`);
-            execSync(`npm install ${installCmd} --save`, { stdio: 'inherit' });
+            console.log(`执行: npm install ${installCmd} --save --legacy-peer-deps`);
+            execSync(`npm install ${installCmd} --save --legacy-peer-deps`, { stdio: 'inherit' });
             console.log('✅ 依赖安装完成');
             
             // 验证安装结果
@@ -98,15 +98,20 @@ const checkAndInstallDeps = async () => {
                 console.log('⚠️ 部分依赖安装失败，请手动安装缺失的依赖：');
                 console.log(`在青龙面板的依赖管理中添加：${missingDeps.map(dep => `${dep.name}${dep.version}`).join(', ')}`);
                 console.log('或通过SSH连接执行：');
-                console.log(`cd /ql/scripts && npm install ${installCmd} --save`);
+                console.log(`cd /ql/scripts && npm install ${installCmd} --save --legacy-peer-deps`);
                 process.exit(1);
             }
         } catch (e) {
             console.log('❌ 依赖安装失败，请手动安装：');
             console.log(`在青龙面板的依赖管理中添加：${missingDeps.map(dep => `${dep.name}${dep.version}`).join(', ')}`);
             console.log('或通过SSH连接执行：');
-            console.log(`cd /ql/scripts && npm install ${missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ')} --save`);
+            console.log(`cd /ql/scripts && npm install ${missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ')} --save --legacy-peer-deps`);
             console.log(`错误详情: ${e.message}`);
+            console.log('如果遇到依赖冲突，请尝试在青龙面板的依赖管理中手动安装：');
+            console.log('1. 依赖管理 -> NodeJs -> 添加依赖');
+            console.log('2. 名称填写: got，版本号填写: 11');
+            console.log('3. 名称填写: tough-cookie，版本号不填');
+            console.log('4. 名称填写: iconv-lite，版本号不填');
             process.exit(1);
         }
     }
