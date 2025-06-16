@@ -54,9 +54,9 @@ const checkAndInstallDeps = async () => {
     
     console.log('🔍 检查依赖...');
     const requiredDeps = [
-        { name: 'iconv-lite', version: '' },
-        { name: 'got', version: '@11' },
-        { name: 'tough-cookie', version: '' }
+        { name: 'iconv-lite', version: '' }, // 不指定版本，使用最新版
+        { name: 'got', version: '@11' },     // 指定版本11，因为got v12版本API变化较大
+        { name: 'tough-cookie', version: '' } // 不指定版本，使用最新版
     ];
     
     let needInstall = false;
@@ -78,9 +78,21 @@ const checkAndInstallDeps = async () => {
         try {
             const { execSync } = require('child_process');
             const installCmd = missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ');
+            
+            // 安装命令说明：
+            // --save: 将依赖保存到package.json中
+            // --legacy-peer-deps: 忽略依赖冲突，使用旧版npm行为安装依赖
             console.log(`执行: npm install ${installCmd} --save --legacy-peer-deps`);
-            execSync(`npm install ${installCmd} --save --legacy-peer-deps`, { stdio: 'inherit' });
-            console.log('✅ 依赖安装完成');
+            
+            // 尝试使用--legacy-peer-deps安装
+            try {
+                execSync(`npm install ${installCmd} --save --legacy-peer-deps`, { stdio: 'inherit' });
+                console.log('✅ 依赖安装完成');
+            } catch (e) {
+                console.log('⚠️ 使用--legacy-peer-deps安装失败，尝试使用--force安装...');
+                execSync(`npm install ${installCmd} --save --force`, { stdio: 'inherit' });
+                console.log('✅ 依赖安装完成');
+            }
             
             // 验证安装结果
             let allInstalled = true;
@@ -96,20 +108,35 @@ const checkAndInstallDeps = async () => {
             
             if (!allInstalled) {
                 console.log('⚠️ 部分依赖安装失败，请手动安装缺失的依赖：');
-                console.log(`在青龙面板的依赖管理中添加：${missingDeps.map(dep => `${dep.name}${dep.version}`).join(', ')}`);
-                console.log('或通过SSH连接执行：');
-                console.log(`cd /ql/scripts && npm install ${installCmd} --save --legacy-peer-deps`);
+                console.log('在青龙面板的依赖管理中添加：');
+                missingDeps.forEach(dep => {
+                    const versionText = dep.version ? dep.version.replace('@', '') : '不指定版本';
+                    console.log(`- ${dep.name}：${versionText}`);
+                });
+                
+                console.log('\n或通过SSH连接执行以下命令之一：');
+                console.log(`1. 标准安装: cd /ql/scripts && npm install ${installCmd}`);
+                console.log(`2. 忽略依赖冲突: cd /ql/scripts && npm install ${installCmd} --legacy-peer-deps`);
+                console.log(`3. 强制安装: cd /ql/scripts && npm install ${installCmd} --force`);
                 process.exit(1);
             }
         } catch (e) {
             console.log('❌ 依赖安装失败，请手动安装：');
-            console.log(`在青龙面板的依赖管理中添加：${missingDeps.map(dep => `${dep.name}${dep.version}`).join(', ')}`);
-            console.log('或通过SSH连接执行：');
-            console.log(`cd /ql/scripts && npm install ${missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ')} --save --legacy-peer-deps`);
-            console.log(`错误详情: ${e.message}`);
-            console.log('如果遇到依赖冲突，请尝试在青龙面板的依赖管理中手动安装：');
+            console.log('在青龙面板的依赖管理中添加：');
+            missingDeps.forEach(dep => {
+                const versionText = dep.version ? dep.version.replace('@', '') : '不指定版本';
+                console.log(`- ${dep.name}：${versionText}`);
+            });
+            
+            console.log('\n或通过SSH连接执行以下命令之一：');
+            console.log(`1. 标准安装: cd /ql/scripts && npm install ${missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ')}`);
+            console.log(`2. 忽略依赖冲突: cd /ql/scripts && npm install ${missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ')} --legacy-peer-deps`);
+            console.log(`3. 强制安装: cd /ql/scripts && npm install ${missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ')} --force`);
+            console.log(`\n错误详情: ${e.message}`);
+            
+            console.log('\n在青龙面板中手动安装的具体步骤：');
             console.log('1. 依赖管理 -> NodeJs -> 添加依赖');
-            console.log('2. 名称填写: got，版本号填写: 11');
+            console.log('2. 名称填写: got，版本号填写: 11（也可以不填写版本号，但可能导致兼容性问题）');
             console.log('3. 名称填写: tough-cookie，版本号不填');
             console.log('4. 名称填写: iconv-lite，版本号不填');
             process.exit(1);
