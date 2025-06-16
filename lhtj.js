@@ -393,35 +393,34 @@ async function signin(user) {
 async function lotterySignin(user) {
     try {
         const opts = {
-            url: "https://gw2c-hw-open.longfor.com/lmarketing-task-api-mvc-prod/openapi/task/v1/lottery/sign",
+            url: "https://gw2c-hw-open.longfor.com/llt-gateway-prod/api/v1/activity/auth/lottery/sign",
             headers: {
                 'Host': 'gw2c-hw-open.longfor.com',
-                'Connection': 'keep-alive',
                 'Accept': 'application/json, text/plain, */*',
-                'X-LF-Bu-Code': user['x-lf-bu-code'] || 'L00602',
-                'Content-Type': 'application/json;charset=UTF-8',
+                'channel': user['x-lf-channel'] || 'L0',
+                'authtoken': user.token,
                 'X-LF-DXRisk-Token': user['x-lf-dxrisk-token'] || '',
                 'Accept-Language': 'zh-CN,zh-Hans;q=0.9',
-                'X-LF-Channel': user['x-lf-channel'] || 'L0',
-                'token': user.token,
-                'X-LF-UserToken': user['x-lf-usertoken'] || user.token,
-                'Origin': 'https://longzhu.longfor.com',
-                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 &MAIAWebKit_iOS_com.longfor.supera_1.14.0_202506052233_Default_3.2.4.8',
-                'Referer': 'https://longzhu.longfor.com/',
-                'X-GAIA-API-KEY': 'c06753f1-3e68-437d-b592-b94656ea5517',
-                'X-LF-DXRisk-Source': user['x-lf-dxrisk-source'] || '2',
+                'x-gaia-api-key': '2f9e3889-91d9-4684-8ff5-24d881438eaf',
                 'Accept-Encoding': 'gzip, deflate, br',
+                'Content-Type': 'application/json',
+                'Origin': 'https://llt.longfor.com',
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 &MAIAWebKit_iOS_com.longfor.supera_1.14.0_202506052233_Default_3.2.4.8',
+                'Referer': 'https://llt.longfor.com/',
+                'bucode': user['x-lf-bu-code'] || 'L00602',
+                'X-LF-DXRisk-Source': user['x-lf-dxrisk-source'] || '2',
+                'Connection': 'keep-alive',
                 'Cookie': user.cookie
             },
             type: 'post',
             dataType: "json",
             body: {
-                "task_id": "",
-                "activity_no": "11111111111727686365925771280000"
+                "component_no": "CS14S00348I5DW7H",
+                "activity_no": "AP25P05380JXUM6X"
             }
         }
         let res = await fetch(opts);
-        $.log(`${$.doFlag[res?.code == '0000']} ${res?.code == '0000' ? '抽奖签到: 成功, 获得' + res?.data?.ticket_times + '次抽奖机会' : '抽奖签到: ' + res?.message}\n`);
+        $.log(`${$.doFlag[res?.code == '0000']} ${res?.code == '0000' ? '抽奖签到: 成功, 获得' + res?.data?.chance + '次抽奖机会' : '抽奖签到: ' + res?.message}\n`);
     } catch (e) {
         $.log(`⛔️ 抽奖签到失败！${e}\n`)
     }
