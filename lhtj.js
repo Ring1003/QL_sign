@@ -9,8 +9,8 @@
    - LHTJ_MANUAL_COOKIE: 手动配置的账号信息，只需要token或cookie即可
    - lhtj_data: 自动获取的Cookie信息（保留原有功能）
 3. 手动配置示例：
-   - 只配置token: `84cde0717db742f1bc205d8c5f78ff1b`
-   - 只配置cookie: `acw_tc=276aedc917500853250508165e3d830c5f183525fbcceca50ffdddea0bd90a`
+   - 只配置token: `84cd00000000000742f1b0000000000`
+   - 只配置cookie: `acw_tc=276aedc91750085325000000000d830c5f183525fbcceca5000000000000000`
    - 多账号配置: 使用 & 符号连接多个token或cookie，如 `token1&token2&cookie3`
    - 也支持完整JSON格式: `{"token":"xxx","cookie":"xxx"}`
 
@@ -48,7 +48,7 @@
 7、所有直接或间接使用、查看此脚本的人均应该仔细阅读此声明。本人保留随时更改或补充此声明的权利。一旦您使用或复制了此脚本，即视为您已接受此免责声明。
 */
 
-// 自动检测和安装依赖
+// 检测依赖并提示安装
 const checkAndInstallDeps = async () => {
     if (!isNode()) return;
     
@@ -59,8 +59,7 @@ const checkAndInstallDeps = async () => {
         { name: 'tough-cookie', version: '' } // 不指定版本，使用最新版
     ];
     
-    let needInstall = false;
-    const missingDeps = [];
+    let missingDeps = [];
     
     for (const dep of requiredDeps) {
         try {
@@ -69,78 +68,29 @@ const checkAndInstallDeps = async () => {
         } catch (e) {
             console.log(`❌ 依赖 ${dep.name} 未安装`);
             missingDeps.push(dep);
-            needInstall = true;
         }
     }
     
-    if (needInstall) {
-        console.log('📦 开始安装缺失的依赖...');
-        try {
-            const { execSync } = require('child_process');
-            const installCmd = missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ');
-            
-            // 安装命令说明：
-            // --save: 将依赖保存到package.json中
-            // --legacy-peer-deps: 忽略依赖冲突，使用旧版npm行为安装依赖
-            console.log(`执行: npm install ${installCmd} --save --legacy-peer-deps`);
-            
-            // 尝试使用--legacy-peer-deps安装
-            try {
-                execSync(`npm install ${installCmd} --save --legacy-peer-deps`, { stdio: 'inherit' });
-                console.log('✅ 依赖安装完成');
-            } catch (e) {
-                console.log('⚠️ 使用--legacy-peer-deps安装失败，尝试使用--force安装...');
-                execSync(`npm install ${installCmd} --save --force`, { stdio: 'inherit' });
-                console.log('✅ 依赖安装完成');
-            }
-            
-            // 验证安装结果
-            let allInstalled = true;
-            for (const dep of missingDeps) {
-                try {
-                    require(dep.name);
-                    console.log(`✅ 依赖 ${dep.name} 安装成功`);
-                } catch (e) {
-                    console.log(`❌ 依赖 ${dep.name} 安装失败，请手动安装`);
-                    allInstalled = false;
-                }
-            }
-            
-            if (!allInstalled) {
-                console.log('⚠️ 部分依赖安装失败，请手动安装缺失的依赖：');
-                console.log('在青龙面板的依赖管理中添加：');
-                missingDeps.forEach(dep => {
-                    const versionText = dep.version ? dep.version.replace('@', '') : '不指定版本';
-                    console.log(`- ${dep.name}：${versionText}`);
-                });
-                
-                console.log('\n或通过SSH连接执行以下命令之一：');
-                console.log(`1. 标准安装: cd /ql/scripts && npm install ${installCmd}`);
-                console.log(`2. 忽略依赖冲突: cd /ql/scripts && npm install ${installCmd} --legacy-peer-deps`);
-                console.log(`3. 强制安装: cd /ql/scripts && npm install ${installCmd} --force`);
-                process.exit(1);
-            }
-        } catch (e) {
-            console.log('❌ 依赖安装失败，请手动安装：');
-            console.log('在青龙面板的依赖管理中添加：');
-            missingDeps.forEach(dep => {
-                const versionText = dep.version ? dep.version.replace('@', '') : '不指定版本';
-                console.log(`- ${dep.name}：${versionText}`);
-            });
-            
-            console.log('\n或通过SSH连接执行以下命令之一：');
-            console.log(`1. 标准安装: cd /ql/scripts && npm install ${missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ')}`);
-            console.log(`2. 忽略依赖冲突: cd /ql/scripts && npm install ${missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ')} --legacy-peer-deps`);
-            console.log(`3. 强制安装: cd /ql/scripts && npm install ${missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ')} --force`);
-            console.log(`\n错误详情: ${e.message}`);
-            
-            console.log('\n在青龙面板中手动安装的具体步骤：');
-            console.log('1. 依赖管理 -> NodeJs -> 添加依赖');
-            console.log('2. 名称填写: got，版本号填写: 11（也可以不填写版本号，但可能导致兼容性问题）');
-            console.log('3. 名称填写: tough-cookie，版本号不填');
-            console.log('4. 名称填写: iconv-lite，版本号不填');
-            process.exit(1);
-        }
+    if (missingDeps.length > 0) {
+        console.log('⚠️ 检测到缺少必要依赖，请手动安装以下依赖：');
+        console.log('在青龙面板的依赖管理中添加：');
+        missingDeps.forEach(dep => {
+            const versionText = dep.version ? dep.version.replace('@', '') : '不指定版本';
+            console.log(`- ${dep.name}：${versionText}`);
+        });
+        
+        console.log('\n或通过SSH连接执行以下命令之一：');
+        const installCmd = missingDeps.map(dep => `${dep.name}${dep.version}`).join(' ');
+        console.log(`1. 标准安装: cd /ql/scripts && npm install ${installCmd}`);
+        console.log(`2. 忽略依赖冲突: cd /ql/scripts && npm install ${installCmd} --legacy-peer-deps`);
+        console.log(`3. 强制安装: cd /ql/scripts && npm install ${installCmd} --force`);
+        
+        console.log('\n在青龙面板中手动安装的具体步骤：');
+        console.log('1. 依赖管理 -> NodeJs -> 添加依赖');
+        console.log('2. 名称填写: got，版本号填写: 11（也可以不填写版本号，但可能导致兼容性问题）');
+        console.log('3. 名称填写: tough-cookie，版本号不填');
+        console.log('4. 名称填写: iconv-lite，版本号不填');
+        console.log('\n⚠️ 缺少依赖可能导致脚本运行异常，请先安装依赖后再运行脚本');
     }
 };
 
@@ -184,8 +134,47 @@ const getManualCookies = () => {
                 // 解析失败，保持原样
             }
             
-            // 如果是字符串，判断是token还是cookie
+            // 如果是字符串，进行解析
             if (typeof parsedAccount === 'string') {
+                // 检查是否包含特定前缀格式
+                const cookiePrefix = "Cookie:";
+                const authtokenPrefix = "authtoken:";
+                
+                let cookieValue = "";
+                let tokenValue = "";
+                
+                // 提取Cookie值
+                if (parsedAccount.includes(cookiePrefix)) {
+                    const cookieStart = parsedAccount.indexOf(cookiePrefix) + cookiePrefix.length;
+                    let cookieEnd = parsedAccount.indexOf(';', cookieStart);
+                    if (cookieEnd === -1) cookieEnd = parsedAccount.length;
+                    cookieValue = parsedAccount.substring(cookieStart, cookieEnd).trim();
+                }
+                
+                // 提取authtoken值
+                if (parsedAccount.includes(authtokenPrefix)) {
+                    const tokenStart = parsedAccount.indexOf(authtokenPrefix) + authtokenPrefix.length;
+                    let tokenEnd = parsedAccount.indexOf(';', tokenStart);
+                    if (tokenEnd === -1) tokenEnd = parsedAccount.length;
+                    tokenValue = parsedAccount.substring(tokenStart, tokenEnd).trim();
+                }
+                
+                // 如果找到了特定前缀格式的值
+                if (cookieValue || tokenValue) {
+                    return {
+                        "userName": "微信用户",
+                        "cookie": cookieValue || "",
+                        "token": tokenValue || "",
+                        // 默认值
+                        "x-lf-channel": "L0",
+                        "x-lf-bu-code": "L00602",
+                        "x-lf-dxrisk-source": "2",
+                        "x-lf-dxrisk-token": "",
+                        "x-lf-usertoken": tokenValue || ""
+                    };
+                }
+                
+                // 如果没有特定前缀，使用原有的解析逻辑
                 // 简单判断是token还是cookie
                 if (parsedAccount.includes('=')) {
                     // 看起来像cookie
@@ -205,7 +194,7 @@ const getManualCookies = () => {
                     return {
                         "userName": "微信用户",
                         "token": parsedAccount,
-                        "cookie": `acw_tc=276aedc917500853250508165e3d830c5f183525fbcceca50ffdddea0bd90a`,
+                        "cookie": ``,
                         // 默认值
                         "x-lf-channel": "L0",
                         "x-lf-bu-code": "L00602",
@@ -220,7 +209,7 @@ const getManualCookies = () => {
             return {
                 "userName": parsedAccount.userName || "微信用户",
                 "token": parsedAccount.token || parsedAccount.authtoken || "",
-                "cookie": parsedAccount.cookie || `acw_tc=276aedc917500853250508165e3d830c5f183525fbcceca50ffdddea0bd90a`,
+                "cookie": parsedAccount.cookie || ``,
                 "x-lf-channel": parsedAccount["x-lf-channel"] || parsedAccount.channel || "L0",
                 "x-lf-bu-code": parsedAccount["x-lf-bu-code"] || parsedAccount.bucode || "L00602",
                 "x-lf-dxrisk-source": parsedAccount["x-lf-dxrisk-source"] || "2",
